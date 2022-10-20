@@ -1,9 +1,10 @@
 import React, { useState, useRef } from "react";
 
-import Tesseract from "tesseract.js";
-// import { createWorker } from "tesseract.js";
 
-const { createWorker } = Tesseract;
+import Tesseract from "tesseract.js";
+
+import {Buffer} from 'buffer';
+
 
 export default function App() {
   const [language, setLanguage] = useState("eng");
@@ -14,32 +15,43 @@ export default function App() {
   const [text, setText] = useState("");
   const [image, setImage] = useState("");
 
+  const { createWorker } = Tesseract;
+
   const [holData, setHolData] = useState();
 
   const onFileChange = (e) => {
-    console.log("file :- ", e.target.files[0]);
-    setImage(e.target.files[0]);
+    let file = e.target.files[0];
+    console.log("file :- ", file);
+    // setImage(file);
+
+
+    if(file){
+      const reader = new FileReader();
+      reader.onload = _handleReaderLoaded
+      reader.readAsBinaryString(file)
+    }
     // setFiles(e.target.files[0]);
   };
 
+  const _handleReaderLoaded=(readerEvt)=>{
+    let binaryString = readerEvt.target.result
+
+    setImage(btoa(binaryString))
+
+    console.log(btoa(binaryString))
+  }
+
   const handleClick = async () => {
     setIsLoading(true);
-    // Tesseract.recognize(image, language, {
-    //   logger: (m) => {
-    //     // console.log(m)
-    //     if (m.status === "recognizing text") {
-    //       setProgressBar(m.progress);
-    //       setPercentage(parseInt(m.progress * 100));
-    //     }
-    //   },
-    // }).then(({ data }) => {
-    //   setHolData(data)
-    //   setText(data.text);
-    //   setIsLoading(false);
-    //   // console.log(text);
-    // });
+    window.Buffer = window.Buffer || require("buffer").Buffer; 
+    
 
-   
+    // let imageBuffer = Buffer.from((image, "base64"))
+
+    let base64 = image;   
+    let imageBuffer = Buffer.from(base64, "base64");
+
+    // return(console.log("imageBuffer :- ",imageBuffer))
 
     const worker = createWorker({
       logger: (m) => {
@@ -54,7 +66,7 @@ export default function App() {
     await worker.load();
     await worker.loadLanguage(language);
     await worker.initialize(language);
-    const data = await worker.recognize( image);
+    const data = await worker.recognize( imageBuffer);
     console.log(data);
     setHolData(data);
     setText(data.data.text);
@@ -66,14 +78,14 @@ export default function App() {
 
   const downloadPDF = async (worker) => {
 
-      const filename = 'tesseract-ocr-result.pdf';
-      const { data } = await worker.getPDF('Tesseract OCR Result');
+      const filename = 'Celect-ocr.pdf';
+      const { data } = await worker.getPDF('CELECT OCR Result');
       const blob = new Blob([new Uint8Array(data)], { type: 'application/pdf' });
 
       var fileURL = URL.createObjectURL(blob);
       window.open(fileURL);
 
-      return console.log("blob :- ", blob, data);
+      // return console.log("blob :- ", blob, data);
 
     if (navigator.msSaveBlob) {
       // IE 10+
