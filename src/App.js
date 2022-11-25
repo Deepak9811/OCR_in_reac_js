@@ -38,7 +38,7 @@ export default function App() {
 
     setImage(btoa(binaryString))
 
-    console.log(btoa(binaryString))
+    // console.log(btoa(binaryString))
   }
 
   const handleClick = async () => {
