@@ -22,3 +22,11 @@ code {
   /* width: 50%; */
   /* margin-top: 3%; */
 }
+
+
+.textEditor {
+  min-height: 400px;
+  border: 1px solid #dfdfdf;
+  margin-bottom: 3%;
+  border-radius: 5px;
+}

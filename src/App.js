@@ -1,10 +1,16 @@
-import React, { useState, useRef } from "react";
-
+import React, { useState, useRef, useEffect } from "react";
 
 import Tesseract from "tesseract.js";
+import { Buffer } from "buffer";
 
-import {Buffer} from 'buffer';
+import { EditorState, convertToRaw, ContentState } from "draft-js";
+import draftToHtml from "draftjs-to-html";
+import { Editor } from "react-draft-wysiwyg";
 
+let htmlToDraft = null;
+if (typeof window === "object") {
+  htmlToDraft = require("html-to-draftjs").default;
+}
 
 export default function App() {
   const [language, setLanguage] = useState("eng");
@@ -14,41 +20,67 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [text, setText] = useState("");
   const [image, setImage] = useState("");
-
+  const [holData, setHolData] = useState();
   const { createWorker } = Tesseract;
 
-  const [holData, setHolData] = useState();
+  // -----RICH-TEXT-EDIT---
+
+  const [editorState, setEditorState] = useState(EditorState.createEmpty());
+
+  const onEditorStateChange = (editorState) => {
+    setEditorState(editorState);
+    console.log(draftToHtml(convertToRaw(editorState.getCurrentContent())));
+  };
+
+  // useEffect(() => {
+  //   convert();
+  // }, []);
+
+  const convert = (data) => {
+    const html =`<div>${data}</div>`;
+    const contentBlock = htmlToDraft(html);
+    if (contentBlock) {
+      const contentState = ContentState.createFromBlockArray(
+        contentBlock.contentBlocks
+      );
+      const editorState = EditorState.createWithContent(contentState);
+      // console.log(
+      //   draftToHtml(convertToRaw(editorState.getCurrentContent()))
+      // );
+      setEditorState(editorState);
+    }
+  };
+
+  //----------Tesseract--------------
 
   const onFileChange = (e) => {
     let file = e.target.files[0];
     console.log("file :- ", file);
     // setImage(file);
 
-
-    if(file){
+    if (file) {
       const reader = new FileReader();
-      reader.onload = _handleReaderLoaded
-      reader.readAsBinaryString(file)
+      reader.onload = _handleReaderLoaded;
+      reader.readAsBinaryString(file);
     }
     // setFiles(e.target.files[0]);
   };
 
-  const _handleReaderLoaded=(readerEvt)=>{
-    let binaryString = readerEvt.target.result
+  const _handleReaderLoaded = (readerEvt) => {
+    let binaryString = readerEvt.target.result;
 
-    setImage(btoa(binaryString))
+    setImage(btoa(binaryString));
 
     // console.log(btoa(binaryString))
-  }
+  };
 
   const handleClick = async () => {
     setIsLoading(true);
-    window.Buffer = window.Buffer || require("buffer").Buffer; 
-    
+    window.Buffer = window.Buffer || require("buffer").Buffer;
 
     // let imageBuffer = Buffer.from((image, "base64"))
 
-    let base64 = image;   
+    let base64 = image;
     let imageBuffer = Buffer.from(base64, "base64");
 
     // return(console.log("imageBuffer :- ",imageBuffer))
@@ -66,37 +98,38 @@ export default function App() {
     await worker.load();
     await worker.loadLanguage(language);
     await worker.initialize(language);
-    const data = await worker.recognize( imageBuffer);
+    const data = await worker.recognize(imageBuffer);
     console.log(data);
     setHolData(data);
     setText(data.data.text);
     setIsLoading(false);
-
-    downloadPDF(worker)
+    console.log(data.data.text);
+    convert(data.data.text)
+    // downloadPDF(worker);
     // await worker.terminate();
   };
 
   const downloadPDF = async (worker) => {
+    const filename = "Celect-ocr.pdf";
+    const { data } = await worker.getPDF("CELECT OCR Result");
+    const blob = new Blob([new Uint8Array(data)], { type: "application/pdf" });
+    console.log(blob)
 
-      const filename = 'Celect-ocr.pdf';
-      const { data } = await worker.getPDF('CELECT OCR Result');
-      const blob = new Blob([new Uint8Array(data)], { type: 'application/pdf' });
+    var fileURL = URL.createObjectURL(blob);
+    window.open(fileURL);
 
-      var fileURL = URL.createObjectURL(blob);
-      window.open(fileURL);
-
-      // return console.log("blob :- ", blob, data);
+    // return console.log("blob :- ", blob, data);
 
     if (navigator.msSaveBlob) {
       // IE 10+
       navigator.msSaveBlob(blob, filename);
     } else {
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       if (link.download !== undefined) {
         const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', filename);
-        link.style.visibility = 'hidden';
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -156,6 +189,36 @@ export default function App() {
           {/* Text Area */}
           {!isLoading && text && (
             <>
+              <div className="textEditor">
+                <Editor
+                  editorState={editorState}
+                  toolbarClassName="toolbar-class"
+                  wrapperClassName="wrapper-class"
+                  editorClassName="editor-class"
+                  onEditorStateChange={onEditorStateChange}
+                  toolbar={{
+                    options: [
+                      "inline",
+                      "blockType",
+                      "fontSize",
+                      "fontFamily",
+                      "list",
+                      "textAlign",
+                      "colorPicker",
+                      "link",
+                      "embedded",
+                      "emoji",
+                      "history",
+                    ],
+                    inline: { inDropdown: false },
+                    list: { inDropdown: false },
+                    textAlign: { inDropdown: false },
+                    link: { inDropdown: false },
+                    history: { inDropdown: false },
+                  }}
+                />
+              </div>
+
               <textarea
                 name=""
                 id=""
