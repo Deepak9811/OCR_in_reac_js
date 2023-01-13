@@ -6,6 +6,7 @@ import { Buffer } from "buffer";
 import { EditorState, convertToRaw, ContentState } from "draft-js";
 import draftToHtml from "draftjs-to-html";
 import { Editor } from "react-draft-wysiwyg";
+import { Test } from "./Test";
 
 let htmlToDraft = null;
 if (typeof window === "object") {
@@ -105,7 +106,7 @@ export default function App() {
     setIsLoading(false);
     console.log(data.data.text);
     convert(data.data.text)
-    // downloadPDF(worker);
+    downloadPDF(worker);
     // await worker.terminate();
   };
 
@@ -139,6 +140,8 @@ export default function App() {
 
   return (
     <div className="container">
+      <Test/>
+
       <div className="row h-100">
         <div className="col-md-5 mx-auto d-flex flex-column align-items-center">
           {!isLoading && <h1 className="mt-5 mb-4 pb-5">Image To Text</h1>}
